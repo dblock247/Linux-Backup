@@ -1,0 +1,47 @@
+#!/bin/bash
+
+sudo apt-get update
+sudo apt-get upgrade -y
+sudo apt-get install -y  git 
+
+# Install Freeswitch
+# nstalling from Source
+# Let's install the deps:
+sudo apt-get update && apt-get install -y curl
+sudo curl https://files.freeswitch.org/repo/deb/debian/freeswitch_archive_g0.pub | apt-key add -
+ 
+sudo echo "deb http://files.freeswitch.org/repo/deb/freeswitch-1.6/ jessie main" > /etc/apt/sources.list.d/freeswitch.list
+sudo apt-get update
+sudo apt-get install -y --force-yes freeswitch-video-deps-most
+
+sudo curl https://files.freeswitch.org/repo/deb/debian/frees
+
+# Compiling
+# With all the dependencies installed, we can now properly build  FreeSWITCH™ 1.6:
+
+# because we're in a branch that will go through many rebases it's
+# better to set this one, or you'll get CONFLICTS when pulling (update)
+git config --global pull.rebase true
+ 
+# then let's get the source. Use the -b flag to get a specific branch
+cd /usr/src/
+git clone https://freeswitch.org/stash/scm/fs/freeswitch.git freeswitch.git
+cd freeswitch.git
+./bootstrap.sh -j
+
+# Enable freeswitch to build mod_xml_curl
+sudo sed -i 's/#xml_int\/mod_xml_curl/xml_int\/mod_xml_curl/' /usr/src/freeswitch.git/modules.conf
+
+# Build and make
+./bootstrap.sh -j
+./configure
+make
+make install
+
+# Edit the modules.conf.xml to allow freeswitch to use mod_xml_curl
+sudo sed -i 's/<!-- <load module="mod_xml_curl"/> -->/<load module="mod_xml_curl"/>/' /usr/src/freeswitch.    git/modules.conf/modules.conf.xml
+
+# Start freeswitch 
+cd /usr/local/freeswitch/
+./bin/freeswitch -ncwait -nonat
+./bin/fs_cli
